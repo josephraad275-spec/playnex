@@ -18,6 +18,8 @@ npm test
 npm run lint
 npm run format:check
 npm run build
+npm run verify:production
+npm run check:bundle
 npx playwright install chromium
 npm run test:e2e
 npm audit --omit=dev
@@ -29,16 +31,24 @@ npm audit --omit=dev
 - `apps/server`: authenticated guest API and WebSocket room authority.
 - `apps/mobile`: native packaging evaluation and release prerequisites.
 - `packages/game-sdk`: integration types and catalog contract.
-- `packages/games`: original Tic-Tac-Toe, Four in a Row, and Quick Trivia rules.
+- `packages/games`: original Tic-Tac-Toe, Four in a Row, Quick Trivia, and Checkers rules.
 - `packages/ui`: shared accessible UI primitives.
 - `packages/shared`: cross-platform constants.
-- `supabase/migrations`: future persistent data/RLS foundation, **not wired into the runtime**.
+- `supabase/migrations`: account/profile lifecycle and RLS migrations for the optional Supabase account integration. Room state is still in memory.
 - `tests`: rules, API, and independent-browser checks.
 - `docs`: architecture, deployment, budget, security, release gaps, and roadmap.
 
+## Optional configuration and compiled server
+
+Local guest play needs no configuration. Copy `.env.example` to `.env` only when connecting a reviewed Supabase project. The development server loads `.env`; never commit it or share service-role keys. After `npm run build`, `npm run start:server` runs the compiled authority from `apps/server/dist/index.mjs`. The client build is in `apps/web/dist`; route `/api` and `/ws` to the authority using the documented same-origin HTTPS reverse proxy. Nothing is deployed by these build commands.
+
 ## Product boundaries
 
-The initial room service keeps data in memory. Restarting it erases guests and matches. Run only one server replica. Registered accounts, friends, achievements, moderation operations, global leaderboards, tournaments, real payments, persistent analytics, and native store releases are not complete. Unavailable features are labeled in the interface. Only the three implemented games are selectable.
+The initial room service keeps data in memory. Restarting it erases guests and matches. Run only one server replica. Four games are playable, including Checkers with mandatory captures and kings. Reporting/blocking, guest profile editing, and a backend-authorized admin review/catalog panel are implemented, but moderation data remains temporary.
+
+Optional Supabase account code includes registration, login, recovery, profile editing, logout, export and configured permanent deletion. No Supabase project is connected: these account flows remain unavailable until server configuration and migrations are applied, and live email/account verification remains outstanding. See [Account setup](docs/ACCOUNT_SETUP.md). Registered account data can persist in Supabase; game rooms, room sessions, reports and blocks still do not survive server restart.
+
+Friends, achievements, global leaderboards, tournaments, real payments, persistent analytics, durable moderation and native store releases remain incomplete. Unavailable features are labeled in the interface. The full 20-screen acceptance map is in [Release acceptance](docs/RELEASE_ACCEPTANCE.md).
 
 WhatsApp invitations use user-initiated official share links. Gameplay runs in a browser; no messages are sent automatically. Device/browser and WhatsApp delivery testing are distinct from local automated link tests.
 

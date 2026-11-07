@@ -1,3 +1,9 @@
+import {
+  initialCheckersState,
+  applyCheckersMove,
+  type CheckersState,
+} from "./checkers";
+export type { CheckersState, CheckersPiece, CheckersMove } from "./checkers";
 import type { GameId, PlayerIndex, Winner } from "../../game-sdk/src/index";
 export type { GameId, PlayerIndex, Winner } from "../../game-sdk/src/index";
 export interface BoardState {
@@ -30,8 +36,8 @@ export interface TriviaView {
   question: string;
   options: string[];
 }
-export type GameState = BoardState | TriviaState;
-export type PublicGameState = BoardState | TriviaView;
+export type GameState = BoardState | TriviaState | CheckersState;
+export type PublicGameState = BoardState | TriviaView | CheckersState;
 const QUESTIONS: readonly Question[] = [
   {
     question: "Which planet is known for its prominent rings?",
@@ -96,6 +102,7 @@ const QUESTIONS: readonly Question[] = [
   },
 ];
 export function initialState(gameId: GameId): GameState {
+  if (gameId === "checkers") return initialCheckersState();
   if (gameId === "tic-tac-toe" || gameId === "four-in-a-row") {
     return {
       gameId,
@@ -171,6 +178,8 @@ export function applyMove(
   if (player !== 0 && player !== 1) throw new Error("Invalid player");
   if (state.winner !== null) throw new Error("Match is complete");
   if (state.turn !== player) throw new Error("Wait for your turn");
+  if (state.gameId === "checkers")
+    return applyCheckersMove(state, player, move);
   const next = structuredClone(state);
   if (next.gameId === "quick-trivia") {
     const question = next.questions[next.round];

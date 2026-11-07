@@ -1,6 +1,6 @@
 # Product specification
 
-PlayNex is an invitation-first social gaming platform. The initial scope is a private, adult-only browser beta with original Tic-Tac-Toe, Four in a Row and Quick Trivia Battle implementations. “Adult-only” is an initial product restriction pending jurisdiction-specific legal review, not a compliance guarantee.
+PlayNex is an invitation-first social gaming platform. The initial scope is a private, adult-only browser beta with original Tic-Tac-Toe, Four in a Row, Quick Trivia Battle and Checkers implementations. “Adult-only” is an initial product restriction pending jurisdiction-specific legal review, not a compliance guarantee.
 
 ## Core journey
 
@@ -10,6 +10,6 @@ WhatsApp integration uses official share URLs; it opens a user-controlled WhatsA
 
 ## Release boundaries
 
-No unrestricted chat, voice chat, gambling, behavioral ads or real payments. Account registration, persistent profiles, friends, tournaments, global leaderboards, achievements, moderation, and native releases are expansion work unless individually implemented and verified. UI must describe unavailable functionality honestly, rather than show invented users, earnings or rankings.
+No unrestricted chat, voice chat, gambling, behavioral ads or real payments. Optional email/password account and own-profile integration is implemented but requires an authorized Supabase project and live verification. Ephemeral reporting/blocking and a backend-authorized administrator review/catalog interface are implemented for private evaluation; they are not durable moderation operations. Friends, tournaments, global leaderboards, persistent achievements and native releases remain expansion work. UI must describe unavailable functionality honestly, rather than show invented users, earnings or rankings.
 
 Success means reliable completed matches and organic invitations. One million legitimate downloads is a stretch goal; browser visits and PWA installations must not be reported as store downloads.

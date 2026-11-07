@@ -6,7 +6,7 @@ No public deployment is authorized by this repository. Prepare and test staging 
 
 1. Run `npm ci`, checks, tests and `npm run build` in CI.
 2. Serve the generated Vite `apps/web/dist` directory on a compatible static HTTPS host, with SPA navigation fallback.
-3. Run the Node TypeScript server using the pinned dependency lockfile and `npm run dev:server` for a private staging evaluation; a production host should compile the server or deliberately install the required TypeScript runtime. Keep one replica until persistence is implemented.
+3. Build the server using `npm run build:server` (included in `npm run build`), producing `apps/server/dist/index.mjs`. On the runtime host install locked production dependencies using `npm ci --omit=dev`, retain the compiled artifact, and run `npm run start:server`. No TypeScript runtime or build tools are required on that host. Run `npm run verify:production` against the compiled artifact before promotion. Keep one replica until persistence is implemented.
 4. Configure an HTTPS reverse proxy that routes `/api/*` and WebSocket `/ws` to the same server. Forward upgrades, retain TLS, and configure the server's accepted origin if offered. Do not cache API responses or invitation URLs. Do not log session credentials or URL query strings.
 5. Test two independent external browsers, copied and WhatsApp-composed invitations, valid/invalid moves, disconnect/rejoin, expiry and rematch on the real staging origin.
 6. Review privacy, safety, abuse handling, availability, dependency findings and KNOWN_LIMITATIONS before requesting public release.

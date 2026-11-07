@@ -8,7 +8,7 @@ Session tokens must not be embedded in shared room invitations. WebSocket creden
 
 ## Database boundary
 
-Supabase SQL is unintegrated and unexecuted here. RLS is enabled for user data. Clients cannot write rooms, membership, invitation hashes, administrative roles or entitlements. Raw room state has no client SELECT grant. A trusted server must project safe snapshots and serialize operations transactionally. Column grants prevent clients from changing report status or entitlement state. User-provided role claims must never grant admin access.
+Supabase migrations support the optional account foundation and proposed room persistence; no hosted Supabase project is configured or verified here. Local embedded PostgreSQL policy tests use an emulated Auth schema and cannot establish hosted Auth/email behavior. RLS is enabled for user data. Clients cannot write rooms, membership, invitation hashes, administrative roles or entitlements. Raw room state has no client SELECT grant. A trusted server must project safe snapshots and serialize operations transactionally. Column grants prevent clients from changing report status or entitlement state. The profile-creation trigger validates display metadata and strict adult self-attestation, records server time and ignores role metadata; direct client profile creation is revoked by migration 002. User-provided role claims must never grant admin access.
 
 ## Initial age/safety policy
 

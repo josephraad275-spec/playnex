@@ -2359,3 +2359,118 @@ footer {
     top: 20px;
   }
 }
+.account-panel form,
+.safety-panel form {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 20px 0;
+}
+.account-panel form label,
+.safety-panel form label {
+  font-size: 13px;
+  color: var(--text);
+  margin-top: 8px;
+}
+.account-panel input:not([type="checkbox"]),
+.account-panel select,
+.safety-panel textarea {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font: inherit;
+  width: 100%;
+  padding: 13px;
+  border-radius: 8px;
+  min-height: 46px;
+}
+.safety-panel textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+.feature-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+}
+.feature-list {
+  list-style: none;
+  margin: 18px 0;
+  padding: 0;
+}
+.feature-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 17px 0;
+  border-top: 1px solid var(--border);
+}
+.feature-list li > div {
+  min-width: 0;
+}
+.feature-list strong {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.feature-list .small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.feature-list .button {
+  flex-shrink: 0;
+}
+.feature-list p {
+  margin: 8px 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.admin-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin: 20px 0 0;
+}
+.admin-stats > div {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+.admin-stats dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.admin-stats dd {
+  font-size: 30px;
+  color: var(--mint);
+  margin: 8px 0 0;
+  font-weight: 700;
+}
+.account-panel .check-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  line-height: 1.6;
+}
+.reports-list li {
+  align-items: flex-start;
+}
+.room-side > .panel + .panel {
+  margin-top: 18px;
+}
+@media (max-width: 650px) {
+  .feature-list li {
+    flex-wrap: wrap;
+  }
+  .admin-stats {
+    gap: 8px;
+  }
+  .admin-stats > div {
+    padding: 12px;
+  }
+  .admin-stats dd {
+    font-size: 25px;
+  }
+}

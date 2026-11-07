@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -28,7 +28,19 @@ import {
 import { Button, EmptyState } from "../../../packages/ui/src";
 import { getGameMetadata } from "../../../packages/game-sdk/src";
 
-type GameId = "tic-tac-toe" | "four-in-a-row" | "quick-trivia";
+import {
+  request as featureRequest,
+  type Features,
+  type AccountSession,
+} from "./features/client";
+import type { SafetyTarget } from "./features/SafetyPanel";
+const AccountPanel = lazy(() => import("./features/AccountPanel"));
+const SafetyPanel = lazy(() => import("./features/SafetyPanel"));
+const AdminPanel = lazy(() => import("./features/AdminPanel"));
+const CheckersBoard = lazy(() => import("./CheckersBoard"));
+import type { CheckersState } from "../../../packages/games/src/checkers";
+
+type GameId = "tic-tac-toe" | "four-in-a-row" | "quick-trivia" | "checkers";
 type Game = {
   id: GameId;
   title: string;
@@ -47,6 +59,7 @@ const presentation: {
   { id: "tic-tac-toe", duration: "2 min", color: "mint", art: "grid" },
   { id: "four-in-a-row", duration: "5 min", color: "purple", art: "discs" },
   { id: "quick-trivia", duration: "3 min", color: "peach", art: "trivia" },
+  { id: "checkers", duration: "10 min", color: "purple", art: "discs" },
 ];
 const games: Game[] = presentation.map((item) => {
   const metadata = getGameMetadata(item.id)!;
@@ -62,7 +75,7 @@ interface Session {
   name: string;
   id?: string;
   playerId?: string;
-  player?: { id: string; name: string };
+  player?: { id: string; name: string; kind?: string; avatar?: string };
 }
 interface Player {
   id: string;
@@ -145,7 +158,13 @@ function Art({ game, large = false }: { game: Game; large?: boolean }) {
   );
 }
 export default function App() {
-  const [page, setPage] = useState(inviteRoom ? "join" : "home"),
+  const [page, setPage] = useState(
+      location.hash.includes("access_token=")
+        ? "accounts"
+        : inviteRoom
+          ? "join"
+          : "home",
+    ),
     [selected, setSelected] = useState<Game>(games[0]!),
     [session, setSession] = useState<Session | null>(stored),
     [name, setName] = useState(stored()?.name || ""),
@@ -172,6 +191,72 @@ export default function App() {
       }
     }),
     [age, setAge] = useState(false);
+  const [features, setFeatures] = useState<Features | null>(null),
+    [safetyTarget, setSafetyTarget] = useState<SafetyTarget | null>(null);
+  useEffect(() => {
+    let live = true;
+    void featureRequest<Features>("/features", session?.token)
+      .then((value) => {
+        if (live) setFeatures(value);
+      })
+      .catch(() => {
+        if (live) setFeatures(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [session?.token]);
+  useEffect(() => {
+    const expired = () => {
+      sessionStorage.removeItem("playnex-session");
+      sessionStorage.removeItem("playnex-room");
+      setSession(null);
+      setRoom(null);
+      setPage("accounts");
+      setError(
+        "Your session expired. Sign in again or create a new guest session.",
+      );
+    };
+    window.addEventListener("playnex-session-expired", expired);
+    return () => window.removeEventListener("playnex-session-expired", expired);
+  }, []);
+  function acceptAccount(next: AccountSession) {
+    sessionStorage.removeItem("playnex-room");
+    setRoom(null);
+    sessionStorage.setItem("playnex-session", JSON.stringify(next));
+    setSession(next);
+    setName(next.name);
+  }
+  function signedOut() {
+    sessionStorage.removeItem("playnex-room");
+    sessionStorage.removeItem("playnex-session");
+    setRoom(null);
+    setSession(null);
+  }
+  function updateName(nextName: string) {
+    setName(nextName);
+    setSession((old) => {
+      if (!old) return old;
+      const next = {
+        ...old,
+        name: nextName,
+        ...(old.player ? { player: { ...old.player, name: nextName } } : {}),
+      };
+      sessionStorage.setItem("playnex-session", JSON.stringify(next));
+      return next;
+    });
+  }
+  function openSafety(player: Player, action: "report" | "block") {
+    if (!room) return;
+    setSafetyTarget({
+      playerId: player.id,
+      name: player.name,
+      roomId: room.id,
+      action,
+    });
+    navigate("safety");
+  }
+
   const navigate = (next: string) => {
     setPage(next);
     setError("");
@@ -332,7 +417,7 @@ export default function App() {
         if (event.code === 1000 || event.code === 1008) {
           sessionStorage.removeItem("playnex-room");
           setRoom(null);
-          setPage("create");
+          setPage((previous) => (previous === "room" ? "create" : previous));
           if (event.reason.toLowerCase().includes("session")) {
             sessionStorage.removeItem("playnex-session");
             setSession(null);
@@ -498,6 +583,10 @@ export default function App() {
             { id: "friends", label: "Friends & invites", icon: Users },
             { id: "leaderboards", label: "Leaderboards", icon: Trophy },
             { id: "favorites", label: "My favorites", icon: Heart },
+            { id: "safety", label: "Safety center", icon: Shield },
+            ...(features?.admin
+              ? [{ id: "admin", label: "Administration", icon: Settings }]
+              : []),
           ].map((item) => (
             <button
               className={page === item.id ? "nav-item active" : "nav-item"}
@@ -841,8 +930,8 @@ export default function App() {
               <div className="roadmap-note">
                 <Sparkles size={18} />
                 <span>More ways to play are on the way.</span> Draw & Guess and
-                Checkers are planned. Only the three games above are available
-                in this beta.
+                more original games are planned. Only games marked available can
+                be played in this beta.
               </div>
             </>
           )}
@@ -876,7 +965,9 @@ export default function App() {
                       ? "Take turns placing a mark in an empty square. The first player to connect three marks in a row, column, or diagonal wins. A full board without a line is a draw."
                       : selected.id === "four-in-a-row"
                         ? "Take turns dropping a disc into a column. Connect four discs horizontally, vertically, or diagonally to win. A full board without a winning line is a draw."
-                        : "Answer each original multiple-choice question when it is your turn. Correct answers earn points. The highest score at the end wins; equal scores draw."}
+                        : selected.id === "checkers"
+                          ? "Move diagonally on dark squares. Captures are mandatory: jump over an opponent, and continue a capture chain when possible. Reach the opposite edge to earn a king. Win by capturing or blocking every opposing piece."
+                          : "Answer each original multiple-choice question when it is your turn. Correct answers earn points. The highest score at the end wins; equal scores draw."}
                   </p>
                   <Button
                     className="primary"
@@ -1070,7 +1161,22 @@ export default function App() {
                             </Button>
                           </div>
                         )}
-                      {current.gameId === "quick-trivia" ? (
+                      {current.gameId === "checkers" ? (
+                        <Suspense
+                          fallback={<p role="status">Loading checkers…</p>}
+                        >
+                          <CheckersBoard
+                            state={current as unknown as CheckersState}
+                            playerIndex={playerIndex === 1 ? 1 : 0}
+                            disabled={
+                              busy ||
+                              current.turn !== playerIndex ||
+                              current.winner !== null
+                            }
+                            onMove={(move) => void action("move", { move })}
+                          />
+                        </Suspense>
+                      ) : current.gameId === "quick-trivia" ? (
                         <div className="trivia-game">
                           <span className="pill">
                             ROUND {(current.round ?? 0) + 1}
@@ -1215,6 +1321,29 @@ export default function App() {
                       their browser.
                     </p>
                   </div>
+                  {room.players
+                    .filter(
+                      (player) =>
+                        player.id !==
+                        (session?.player?.id ||
+                          session?.id ||
+                          session?.playerId),
+                    )
+                    .map((player) => (
+                      <div className="panel" key={player.id}>
+                        <h2>Player safety</h2>
+                        <p>
+                          Playing with {player.name}. Report concerns before
+                          blocking; blocking closes your shared room.
+                        </p>
+                        <Button onClick={() => openSafety(player, "report")}>
+                          Report player
+                        </Button>
+                        <Button onClick={() => openSafety(player, "block")}>
+                          Block player
+                        </Button>
+                      </div>
+                    ))}
                   <div className="safety-note">
                     <Shield size={20} />
                     <p>
@@ -1226,6 +1355,35 @@ export default function App() {
               </div>
             </>
           )}
+          {(page === "accounts" || page === "safety" || page === "admin") && (
+            <Suspense
+              fallback={
+                <p className="panel" role="status">
+                  Loading your settings…
+                </p>
+              }
+            >
+              {page === "accounts" ? (
+                <AccountPanel
+                  session={session}
+                  onSession={acceptAccount}
+                  onLogout={signedOut}
+                  onName={updateName}
+                />
+              ) : page === "safety" ? (
+                <SafetyPanel
+                  session={session}
+                  target={safetyTarget}
+                  onBlocked={() => {
+                    sessionStorage.removeItem("playnex-room");
+                    setRoom(null);
+                  }}
+                />
+              ) : (
+                <AdminPanel session={session} />
+              )}
+            </Suspense>
+          )}
           {page === "profile" && (
             <div className="form-page">
               <span className="avatar big">
@@ -1234,16 +1392,22 @@ export default function App() {
               <h1>{session?.name || "Make yourself at home."}</h1>
               <p>
                 {session
-                  ? "You’re playing as a guest."
+                  ? session.player?.kind === "registered"
+                    ? "You’re signed in to your account."
+                    : "You’re playing as a guest."
                   : "Choose a name when you create or join your first room."}
               </p>
               <div className="panel">
-                <h2>Your guest profile</h2>
+                <h2>Your player profile</h2>
                 <p>
-                  Guest identity is saved in this tab. Registered accounts,
-                  cloud profiles, persistent achievements, and account recovery
-                  are not available in this beta.
+                  Your session stays in this tab. Guest identity is temporary.
+                  Registered accounts and password recovery require the
+                  founder’s configured authentication service. Persistent
+                  achievements remain under development.
                 </p>
+                <Button onClick={() => navigate("accounts")}>
+                  Accounts & recovery
+                </Button>
                 <Button onClick={() => navigate("create")}>
                   Start a game <ArrowRight size={16} />
                 </Button>
@@ -1251,7 +1415,9 @@ export default function App() {
               {session && (
                 <>
                   <Button disabled={busy} onClick={() => void exportGuest()}>
-                    Export guest data
+                    {session.player?.kind === "registered"
+                      ? "Export account session data"
+                      : "Export guest data"}
                   </Button>
                   <Button
                     disabled={busy}
@@ -1275,7 +1441,9 @@ export default function App() {
                       })
                     }
                   >
-                    Delete guest data and close rooms
+                    {session.player?.kind === "registered"
+                      ? "Close this session and rooms"
+                      : "Delete guest data and close rooms"}
                   </Button>
                 </>
               )}
@@ -1322,8 +1490,9 @@ export default function App() {
               <h1>Friends & invitations</h1>
               <EmptyState title="A great game starts with an invitation.">
                 Create a private room, then copy its secure invitation or share
-                it through WhatsApp. Persistent friend lists, blocking, group
-                voting, and saved invitations are under development.
+                it through WhatsApp. Persistent friend lists, group voting, and
+                saved invitations are under development. Use Safety center to
+                manage blocks and reports.
               </EmptyState>
               <Button className="primary" onClick={() => navigate("create")}>
                 Create a room <Plus size={18} />
@@ -1359,25 +1528,32 @@ export default function App() {
                 <p>
                   Your display name, guest session, room membership, and moves
                   are held by the game service. This browser tab stores a guest
-                  token; favorites and theme stay on your device. No email,
-                  location, payment details, or contacts are requested. Guest
-                  tokens grant access to your room: do not share them.
+                  token; favorites and theme stay on your device. Guest play
+                  requires no email. Optional registered accounts send your
+                  email and credentials to the configured authentication
+                  provider. No location, payment details, or contacts are
+                  requested. Session tokens grant access to your room: do not
+                  share them.
                 </p>
                 <h2>Play with people you trust</h2>
                 <p>
                   Invitation links grant access to an open seat. Public
-                  messaging and voice chat are disabled. Blocking and an in-app
-                  report workflow are not implemented. Leave a room by
+                  messaging and voice chat are disabled. Use your room’s player
+                  safety controls to block or report the other player. Reports
+                  and blocks are temporary beta records. Leave a room by
                   navigating home and avoid sharing links publicly. Do not use
                   this beta for sensitive interactions.
                 </p>
                 <h2>Data controls</h2>
                 <p>
-                  Export or delete your guest data from your profile. Deletion
-                  closes your rooms. Guest sessions expire after 24 hours, rooms
-                  after two hours; all data is lost on a server restart. Durable
-                  account deletion remains unavailable. Public analytics and
-                  advertising are disabled.
+                  Export your session data or close your guest session from your
+                  profile. Guest session deletion closes your rooms. Temporary
+                  moderation records expire at server restart. Guest sessions
+                  expire after 24 hours, rooms after two hours. Registered
+                  sessions expire after one hour. Account deletion requires the
+                  configured authentication provider and enabled deletion
+                  service. These exports are not a guarantee of legal
+                  compliance. Public analytics and advertising are disabled.
                 </p>
               </section>
             </div>
@@ -1401,15 +1577,18 @@ export default function App() {
                 </p>
                 <h2>Where are accounts and payments?</h2>
                 <p>
-                  They are not enabled yet. Guest gameplay is free. Do not send
-                  payment or sensitive personal information to anyone claiming
-                  to sell access.
+                  Accounts and recovery work only when the founder configures
+                  the authentication service; check Accounts & recovery from
+                  your profile. Payments remain disabled. Guest gameplay is
+                  free. Never send payment to anyone claiming to sell beta
+                  access.
                 </p>
                 <h2>Need to report a problem?</h2>
                 <p>
-                  A monitored support channel and reporting tools must be
-                  configured before public launch. Beta testers should report
-                  issues through the repository’s GitHub Issues.
+                  Use the player safety controls in your room to submit a
+                  concern. A staffed moderation process must be established
+                  before public launch. Beta testers can also report issues
+                  through the repository’s GitHub Issues.
                 </p>
                 <a
                   className="button"
@@ -1428,8 +1607,8 @@ export default function App() {
               <h1>Great company is free.</h1>
               <EmptyState title="No payments. No subscriptions. Just play.">
                 Premium subscriptions, cosmetics, and purchases are not
-                available. The three beta games are free. Future paid features
-                require payment testing and founder approval.
+                available. All available beta games are free. Future paid
+                features require payment testing and founder approval.
               </EmptyState>
               <Button onClick={() => navigate("catalog")}>
                 Explore free games <ArrowRight size={16} />

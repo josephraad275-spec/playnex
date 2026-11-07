@@ -54,8 +54,9 @@ const entries: Pick<
     id: "checkers",
     title: "Checkers",
     category: "Board & strategy",
-    description: "A planned game of diagonal moves, jumps, and kings.",
-    availability: "planned",
+    description:
+      "Diagonal moves, mandatory jumps, and kings. A classic strategy challenge for two.",
+    availability: "playable",
     minPlayers: 2,
     maxPlayers: 2,
   },
@@ -203,10 +204,7 @@ export const catalog: readonly GameMetadata[] = entries.map((entry) => ({
   version: entry.availability === "playable" ? "0.1.0" : "0.0.0",
   thumbnail: "/icon.svg",
   developer: "PlayNex",
-  license:
-    entry.availability === "playable"
-      ? "Original PlayNex implementation; repository license applies"
-      : "Not implemented",
+  license: entry.availability === "playable" ? "MIT" : "Not implemented",
   multiplayer: entry.availability === "playable",
   monetization: "free",
   languages: ["en"],

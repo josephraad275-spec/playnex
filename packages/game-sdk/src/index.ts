@@ -1,7 +1,8 @@
 /** Rules execute on the trusted server. Clients receive only a public projection. */
 export type PlayerIndex = 0 | 1;
 export type Winner = PlayerIndex | "draw" | null;
-export type GameId = "tic-tac-toe" | "four-in-a-row" | "quick-trivia";
+export type GameId =
+  "tic-tac-toe" | "four-in-a-row" | "quick-trivia" | "checkers";
 export interface GameDefinition<State, View> {
   initialState(): State;
   applyMove(state: State, player: PlayerIndex, move: unknown): State;

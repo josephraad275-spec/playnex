@@ -10,8 +10,8 @@
   "scripts": {
     "dev": "concurrently -k \"npm run dev:server\" \"npm run dev:web\"",
     "dev:web": "vite --config apps/web/vite.config.ts --host 0.0.0.0",
-    "dev:server": "node --import tsx apps/server/src/index.ts",
-    "build": "tsc --noEmit && vite build --config apps/web/vite.config.ts",
+    "dev:server": "node --env-file-if-exists=.env --import tsx apps/server/src/index.ts",
+    "build": "npm run typecheck && npm run build:web && npm run build:server",
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
@@ -19,7 +19,11 @@
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "audit": "npm audit --omit=dev",
-    "check:bundle": "node scripts/check-bundle.mjs"
+    "check:bundle": "node scripts/check-bundle.mjs",
+    "build:web": "vite build --config apps/web/vite.config.ts",
+    "build:server": "esbuild apps/server/src/index.ts --bundle --platform=node --format=esm --packages=external --outfile=apps/server/dist/index.mjs",
+    "start:server": "node --env-file-if-exists=.env apps/server/dist/index.mjs",
+    "verify:production": "node scripts/smoke-server.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -28,6 +32,7 @@
     "ws": "^8.18.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.15",
     "@eslint/js": "^9.0.0",
     "@playwright/test": "^1.50.0",
     "@tailwindcss/vite": "^4.0.0",
@@ -37,6 +42,7 @@
     "@types/ws": "^8.5.0",
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^9.0.0",
+    "esbuild": "^0.28.2",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "globals": "^16.0.0",

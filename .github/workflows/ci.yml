@@ -16,6 +16,7 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build
+      - run: npm run verify:production
       - run: npm run check:bundle
       - run: npm audit --omit=dev --audit-level=high
       - run: npx playwright install --with-deps chromium
