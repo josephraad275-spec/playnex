@@ -11,6 +11,6 @@
 - Hosting is unprovisioned. Static Pages hosting alone cannot run the Node/WebSocket server. Public deployment requires founder approval, a compatible backend and a completed release review.
 - Mobile WhatsApp delivery, real-device accessibility, production concurrency/load, backup restore and legal review require external validation. Automated share-link checks do not establish delivery.
 - Review exact automated results in the release report; no test is treated as passed merely because its source exists.
-- GitHub checkout works, but both Git push and GitHub App branch creation returned HTTP403 during implementation. The completed work is committed locally; no remote PR can be claimed until write permissions are corrected.
+- GitHub write permissions initially blocked publication of the source branch. The founder updated the connection and the beta feature branch was successfully pushed. Public application deployment remains unauthorized.
 - PWA shell metadata and static-art caching are included. Offline multiplayer, push notifications, verified installation on iOS/Android and native binaries are not implemented.
 - The UI and first three game controls currently ship as a small single bundle. Lazy loading per-game code is a future SDK integration requirement before the catalog expands to larger games.
